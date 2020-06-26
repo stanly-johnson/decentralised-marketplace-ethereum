@@ -10,7 +10,7 @@ contract Market {
     }
 
     // create a var to store the store owner address
-    address payable store_owner = address(0x5660df1681a32E70704439E9243b1B91c369580e);
+    address payable public store_owner = address(0x5660df1681a32E70704439E9243b1B91c369580e);
 
     // event to signal purchase
     event Purchase(uint256 _uid);
