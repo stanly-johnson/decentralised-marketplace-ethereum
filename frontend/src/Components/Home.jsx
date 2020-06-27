@@ -5,6 +5,9 @@ import TruffleContract from 'truffle-contract'
 import Market from './contracts/Market.json'
 import ItemTable from './ItemTable'
 import 'bootstrap/dist/css/bootstrap.css'
+const ipfsClient = require('ipfs-http-client')
+const ipfs = ipfsClient({ host: 'ipfs.infura.io', port: 5001, protocol: 'https' })
+
 
 class Home extends Component {
   constructor(props) {
@@ -13,7 +16,9 @@ class Home extends Component {
       account: '0x0',
       items: [],
       loading: true,
-      isOwner : false
+      isOwner : false,
+      fileName : "",
+      filePrice : ""
     }
     
     // check the window instance for metamask plugin
@@ -44,7 +49,7 @@ class Home extends Component {
     this.market = TruffleContract(Market)
     this.market.setProvider(window.web3.currentProvider)
 
-    // this.castVote = this.castVote.bind(this)
+    //this.watchPurchaseEvents = this.watchPurchaseEvents.bind(this)
     this.purchaseItem = this.purchaseItem.bind(this)
 
   }
@@ -65,7 +70,7 @@ class Home extends Component {
               items.push({
                 id: item[0].toNumber(),
                 name: item[1],
-                price: item[3].toNumber()
+                price: item[2].toNumber()
               });
               this.setState({ items: items })
             });
@@ -86,22 +91,65 @@ class Home extends Component {
   }
 
   // watch for the voted event emmited to change the state from voting to normal
-  watchEvents() {
-    this.electionInstance.votedEvent({}, {
-      fromBlock: 0,
-      toBlock: 'latest'
-    }).watch((error, event) => {
-      this.setState({ voting: false })
-    })
-  }
+  // watchPurchaseEvents() {
+  //   this.marketInstance.Purchase({}, {
+  //     fromBlock: 0,
+  //     toBlock: 'latest'
+  //   }).watch((error, event) => {
+  //     console.log(event)
+  //     this.setState({ voting: false })
+  //   })
+  // }
 
   // function to init smart contract voting function
   purchaseItem(itemId, price) {
-    //this.setState({ voting: true })
     this.marketInstance.purchaseItem(itemId, { from: this.state.account, value : price }).then((result) =>
-      //this.setState({ hasVoted: true })
-      console.log(result)
+      {
+        console.log(result);
+        // read the receipt for the details of the event emitted
+        for (var i = 0; i < result.logs.length; i++) {
+          var log = result.logs[i];
+          if (log.event === "Purchase") {
+            // We found the event!
+            console.log(log.args._link)
+            console.log("https://ipfs.infura.io/ipfs/"+log.args._link)
+            window.open("https://ipfs.infura.io/ipfs/"+log.args._link)
+            break;
+          }
+        }
+      }
     )
+  }
+
+  captureFile = (event) => {
+    event.preventDefault()
+    const file = event.target.files[0]
+    const reader = new window.FileReader()
+    reader.readAsArrayBuffer(file)
+    reader.onloadend = () => {
+      this.setState({ buffer: Buffer(reader.result) })
+      console.log('buffer', this.state.buffer)
+    }
+  }
+
+
+  onSubmit = (event) => {
+    event.preventDefault()
+    console.log("Submitting file to ipfs...")
+    ipfs.add(this.state.buffer, (error, result) => {
+      console.log('Ipfs result', result)
+      if(error) {
+        console.error(error)
+        return
+      }
+      console.log(result[0].hash)
+      this.marketInstance.createItem(this.state.fileName, this.state.filePrice, String(result[0].hash), {from : this.state.account}).then((result) =>
+      {
+        console.log(result);
+      }
+    )
+
+    })
   }
 
   render() {
@@ -109,12 +157,12 @@ class Home extends Component {
       <div class='row'>
         <div class='col-lg-12 text-center' >
           <br /><br /><br />
-          <h1>Ethereum Book Store</h1>
+          <h1>Ethereum Digital Store</h1>
           <br/>
-          { this.state.loading
-            ? <p class='text-center'>Loading...</p>
-            //if the content if loaded, show the candidate table
-          : <div className="col-md-12">
+          { this.state && this.state.loading && (<p class='text-center'>Loading...</p>)}
+          
+          { this.state && !this.state.loading && !this.state.isOwner && (
+            <div className="col-md-12">
             <br />
             {this.state.items.map(item => (
                 <ul key={item.id}>
@@ -122,7 +170,27 @@ class Home extends Component {
                 </ul>
             ))}
             </div>
-          }
+          )}
+
+          { this.state && !this.state.loading && this.state.isOwner && (
+            <div className="col-md-10">
+            <br />
+            <h3>Store Owner Dashboard</h3>
+            <hr />
+            <form onSubmit={this.onSubmit} >
+                  <label htmlFor="name">Name:</label>
+                  <input type='text' onChange={e => this.setState({ fileName: e.target.value })} /> <br />
+
+                  <label htmlFor="name">Price:</label>
+                  <input type='text' onChange={e => this.setState({ filePrice: e.target.value })} /> <br />
+
+                  <label htmlFor="name">Upload:</label>
+                  <input type='file' onChange={this.captureFile} /> <br />
+                  <input type='submit' />
+            </form>
+            </div>
+          )}
+
         </div>
       </div>
     )
