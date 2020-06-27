@@ -101,7 +101,7 @@ class Home extends Component {
   //   })
   // }
 
-  // function to init smart contract voting function
+  // function to purchase a new item
   purchaseItem(itemId, price) {
     this.marketInstance.purchaseItem(itemId, { from: this.state.account, value : price }).then((result) =>
       {
@@ -143,7 +143,8 @@ class Home extends Component {
         return
       }
       console.log(result[0].hash)
-      this.marketInstance.createItem(this.state.fileName, this.state.filePrice, String(result[0].hash), {from : this.state.account}).then((result) =>
+      this.marketInstance.createItem(this.state.fileName, this.state.filePrice, String(result[0].hash), {from : this.state.account})
+      .then((result) =>
       {
         console.log(result);
       }
@@ -157,7 +158,7 @@ class Home extends Component {
       <div class='row'>
         <div class='col-lg-12 text-center' >
           <br /><br /><br />
-          <h1>Ethereum Digital Store</h1>
+          <h1>Ethereum MarketPlace</h1>
           <br/>
           { this.state && this.state.loading && (<p class='text-center'>Loading...</p>)}
           

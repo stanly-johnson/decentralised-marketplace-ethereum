@@ -41,7 +41,7 @@ contract Market {
         _;
     }
 
-    //funtion to register new candidate
+    //function to create new item
     function createItem (string memory _name, uint256 _price, string memory _link) public onlyOwner {
         // create uid for item
         itemCount++;
