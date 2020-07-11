@@ -6,15 +6,13 @@ contract Market {
         uint uid;
         string name;
         uint256 price;
+        address seller;
     }
 
     struct ItemDetail {
         uint uid;
         string link;
     }
-
-    // create a var to store the store owner address
-    address payable public store_owner = address(0x5660df1681a32E70704439E9243b1B91c369580e);
 
     // event to signal purchase
     event Purchase(uint256 _uid, string _link);
@@ -26,27 +24,22 @@ contract Market {
     mapping(uint => Item) public items;
     // Create map to items list
     mapping(uint => ItemDetail) private itemDetails;
+    //store balance payable to each seller
+    mapping(address => uint) public seller_balance;
 
     // Store Items Count
     uint public itemCount;
 
     constructor () public {
-        // create a test candidate
-        createItem("BookX", 10000000000000000, "stahshsidid");
     }
 
-    modifier onlyOwner() {
-        // ensure the store owner is the msg.sender
-        require(msg.sender == store_owner, "Only owner can create asset");
-        _;
-    }
 
     //function to create new item
-    function createItem (string memory _name, uint256 _price, string memory _link) public onlyOwner {
+    function createItem (string memory _name, uint256 _price, string memory _link) public {
         // create uid for item
         itemCount++;
         // create the item
-        items[itemCount] = Item(itemCount, _name, _price);
+        items[itemCount] = Item(itemCount, _name, _price, msg.sender);
         itemDetails[itemCount] = ItemDetail(itemCount, _link);
         //trigger item created event
         emit ItemCreated(itemCount);
@@ -55,13 +48,19 @@ contract Market {
     function purchaseItem (uint256 _uid) public payable {
         // check if the value sent by caller is equal to price
         require(msg.value == items[_uid].price, "Price Mismatch");
+        // credit purchase price to seller balance
+        seller_balance[items[_uid].seller] += msg.value;
         // trigger item purchase event
         emit Purchase(_uid, itemDetails[_uid].link);
     }
 
-    function withdrawBalance() public onlyOwner {
+    function withdrawBalance() public {
+        // require that a seller has minimum balance to withdraw
+        require(seller_balance[msg.sender] > 0, "Seller Balance is zero");
         // transfer balance
-        store_owner.transfer(address(this).balance);
+        msg.sender.transfer(seller_balance[msg.sender]);
+        // set the seller balance to zero
+        seller_balance[msg.sender] = 0;
     }
 
 
