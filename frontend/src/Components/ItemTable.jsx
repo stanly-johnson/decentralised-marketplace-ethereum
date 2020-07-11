@@ -8,22 +8,15 @@ class ItemTable extends Component {
     const { item, purchaseItem } = this.props;
     return (
       <React.Fragment>
-        <div className="row">
-          <div className="col-md-6">
-            Name : <strong>{item.name}</strong>
-            <br />
-            Price : {parseFloat(item.price)/1000000000000000000}
-          </div>
-          <div className="col-md-6">
-          <button type="button" class="btn btn-danger" onClick={() => purchaseItem(item.id, item.price)}>
+        <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{item.name}</h5>
+          <h6 class="card-subtitle mb-2 text-muted">Price : {parseFloat(item.price)/1000000000000000000}</h6>
+          <button type="button" class="btn btn-info" onClick={() => purchaseItem(item.id, item.price)}>
             Buy
           </button>
-          </div>
-        
-          <br /><br />
-          <hr />
-          
         </div>
+      </div>
         
       </React.Fragment>
     );

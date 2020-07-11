@@ -5,9 +5,6 @@ import TruffleContract from 'truffle-contract'
 import Market from './contracts/Market.json'
 import ItemTable from './ItemTable'
 import 'bootstrap/dist/css/bootstrap.css'
-const ipfsClient = require('ipfs-http-client')
-const ipfs = ipfsClient({ host: 'ipfs.infura.io', port: 5001, protocol: 'https' })
-
 
 class Home extends Component {
   constructor(props) {
@@ -59,10 +56,10 @@ class Home extends Component {
     this.web3.eth.getCoinbase((err, account) => {
       // set the account from metamask as the base account
       this.setState({ account })
-      this.market.deployed().then(async (marketInstance) => {
+      this.market.deployed().then(marketInstance => {
         this.marketInstance = marketInstance
         // loop through mapping and get the list of items
-        await this.marketInstance.itemCount().then((itemCount) => {
+        this.marketInstance.itemCount().then((itemCount) => {
           for (var i = 1; i <= itemCount; i++) {
             this.marketInstance.items(i).then((item) => {
               const items = [...this.state.items]
@@ -76,30 +73,9 @@ class Home extends Component {
             });
           }
         })
-        // set the voted value if the current address has already voted
-        this.marketInstance.store_owner().then((address) => {
-          let isOwner =  false;
-          if (address === this.state.account){
-            isOwner = true;
-          }
-          console.log(this.state.items)
-          console.log(isOwner)
-          this.setState({  isOwner , loading: false })
-        })
-      })
+      }).then(this.setState({ loading: false }))
     })
   }
-
-  // watch for the voted event emmited to change the state from voting to normal
-  // watchPurchaseEvents() {
-  //   this.marketInstance.Purchase({}, {
-  //     fromBlock: 0,
-  //     toBlock: 'latest'
-  //   }).watch((error, event) => {
-  //     console.log(event)
-  //     this.setState({ voting: false })
-  //   })
-  // }
 
   // function to purchase a new item
   purchaseItem(itemId, price) {
@@ -118,82 +94,49 @@ class Home extends Component {
           }
         }
       }
-    )
-  }
-
-  captureFile = (event) => {
-    event.preventDefault()
-    const file = event.target.files[0]
-    const reader = new window.FileReader()
-    reader.readAsArrayBuffer(file)
-    reader.onloadend = () => {
-      this.setState({ buffer: Buffer(reader.result) })
-      console.log('buffer', this.state.buffer)
-    }
-  }
-
-
-  onSubmit = (event) => {
-    event.preventDefault()
-    console.log("Submitting file to ipfs...")
-    ipfs.add(this.state.buffer, (error, result) => {
-      console.log('Ipfs result', result)
-      if(error) {
-        console.error(error)
-        return
-      }
-      console.log(result[0].hash)
-      this.marketInstance.createItem(this.state.fileName, this.state.filePrice, String(result[0].hash), {from : this.state.account})
-      .then((result) =>
-      {
-        console.log(result);
-      }
-    )
-
-    })
+    ).catch(err => {alert("Transaction Failed!"); console.log(err)})
   }
 
   render() {
     return (
+    <React.Fragment>
+      <main role="main" class="container">
+      <div class="jumbotron">
+        <h1 class="display-4">Ethereum Marketplace</h1>
+        <p class="lead">Buy and Sell digital goods without third party fees!</p>
+        <hr class="my-4" />
+        <p>List your product and reach customers. Get paid in ETH</p>
+        <a class="btn btn-primary btn-lg" href="/list" role="button">List Item for Sale</a>
+      </div>
       <div class='row'>
         <div class='col-lg-12 text-center' >
-          <br /><br /><br />
-          <h1>Ethereum MarketPlace</h1>
-          <br/>
+
           { this.state && this.state.loading && (<p class='text-center'>Loading...</p>)}
           
           { this.state && !this.state.loading && !this.state.isOwner && (
             <div className="col-md-12">
             <br />
-            {this.state.items.map(item => (
-                <ul key={item.id}>
-                <ItemTable item={item} purchaseItem={this.purchaseItem}/>
-                </ul>
-            ))}
-            </div>
-          )}
-
-          { this.state && !this.state.loading && this.state.isOwner && (
-            <div className="col-md-10">
-            <br />
-            <h3>Store Owner Dashboard</h3>
-            <hr />
-            <form onSubmit={this.onSubmit} >
-                  <label htmlFor="name">Name:</label>
-                  <input type='text' onChange={e => this.setState({ fileName: e.target.value })} /> <br />
-
-                  <label htmlFor="name">Price:</label>
-                  <input type='text' onChange={e => this.setState({ filePrice: e.target.value })} /> <br />
-
-                  <label htmlFor="name">Upload:</label>
-                  <input type='file' onChange={this.captureFile} /> <br />
-                  <input type='submit' />
-            </form>
+              <div class="list-group">
+              {this.state.items.map(item => (
+                  <ul key={item.id}>
+                  <ItemTable item={item} purchaseItem={this.purchaseItem}/>
+                  </ul>
+              ))}
+              </div>
             </div>
           )}
 
         </div>
       </div>
+      </main>
+
+      <footer class="footer fixed-bottom">
+      <div class="container">
+        <span class="text-muted">Decentralised store to buy and sell electronic arts.</span>
+        <p>Ethereum MarketPlace</p>
+      </div>
+      </footer>
+      </React.Fragment>
     )
   }
 }
