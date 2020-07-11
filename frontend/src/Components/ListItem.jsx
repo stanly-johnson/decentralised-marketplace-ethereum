@@ -92,6 +92,16 @@ class ListItem extends Component {
     
         })
       }
+    
+      // function to purchase a new item
+      withdrawBalance() {
+        this.marketInstance.withdrawBalance({ from: this.state.account}).then((result) =>
+          {
+            console.log(result);
+            alert("Request Succesful!")
+          }
+        ).catch(err => {alert("Request Failed!"); console.log(err)})
+      }
 
     render() { 
         return (  
@@ -112,7 +122,8 @@ class ListItem extends Component {
 
                 { this.state && !this.state.loading && (
                   <div className="col-md-6">
-                  <p>Your balance : {this.state.seller_balance}</p>
+                  <p>Available balance : {this.state.seller_balance} : <button class="btn btn-info btn-sm" onClick={() => this.withdrawBalance()}>Withdraw Balance</button>
+                  </p>
                   <br />
                   <h3>List new item</h3>
                   <hr />
@@ -139,7 +150,7 @@ class ListItem extends Component {
               </div>
             </div>
             </main>
-      
+          
             <footer class="footer fixed-bottom">
             <div class="container">
               <span class="text-muted">Decentralised store to buy and sell electronic arts.</span>
